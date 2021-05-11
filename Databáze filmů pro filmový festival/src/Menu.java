@@ -1,3 +1,4 @@
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -19,7 +20,7 @@ public class Menu extends Lists {
             System.out.println("Choose from options: ADDGENRE, ADDACTOR, ADDMOVIE, ADDHALL, GETMOVIES, MOVIESTODAY, FILMINHALL");
             String option = sc.nextLine();
             System.out.println();
-
+            
             Option(option);
         }
     }
@@ -48,6 +49,7 @@ public class Menu extends Lists {
                     PrintAllMovies();
                     break;
                 case "MOVIESTODAY":
+                	GetTodaysMovies();
                     break;
                 case "FILMINHALL":
                     GetHallMovies();
@@ -119,10 +121,77 @@ public class Menu extends Lists {
         movie.genres = ChooseToAdd(genres, "genre");
         movie.actors = ChooseToAdd(actors, "actor");
         movie.halls = ChooseToAdd(halls, "hall");
-
+        
+        while(true) {
+        	System.out.println("Write date when the film will be played.");
+        	movie.dates.add(CreateDate());
+        	System.out.println("If you are done write DONE else write anything");
+        	String dt =  sc.nextLine().toUpperCase();
+        	if(dt.equals("DONE")) {
+        		break;
+        	}
+        	
+        }
         movies.add(movie);
         System.out.println("Movie added");
         System.out.println();
+        
+    }
+    private LocalDate CreateDate() {
+    	int year = 0;
+    	int day = 0;
+    	int month = 0;
+    	
+    	while(true) {
+    		try {
+    			
+    			if(day==0) {
+    				System.out.println("Now type day. ");
+    				int response = Integer.parseInt(sc.nextLine());
+    				if(response>31 || response <=0 ) {
+    					throw new Exception("Impossible day!");
+    				}
+    				day = response;
+    				
+    			}
+    			else if(month == 0) {
+    				System.out.println("Now type month. ");
+    				int response = Integer.parseInt(sc.nextLine());
+    				if(response>12 || response <=0 ) {
+    					throw new Exception("Impossible month!");
+    					
+    			}
+    				month = response;
+    		}
+    			else if(year == 0) {
+    				System.out.println("Now type year. ");
+    				int response = Integer.parseInt(sc.nextLine());
+    				if(LocalDate.now().getYear() > response) {
+    					throw new Exception("Impossible year!");
+    					
+    			}
+    				year = response;
+    		}
+    			else {
+    				return LocalDate.of(year,month,day);
+    			}
+    			
+    	}
+    			catch(Exception e) {
+    			System.out.println(e.getMessage());
+    			System.out.println("Try again!");
+    			
+    		}
+    	}
+    	
+    }
+    private void GetTodaysMovies() {
+    	for(Movie movie : movies) {
+    		for(LocalDate date : movie.dates) {
+    		if(date.equals(LocalDate.now())) {
+    			System.out.println(movie.name + " in hall ");
+    		}
+    	}}
     }
 
     private ArrayList<String> ChooseToAdd(ArrayList<String> list, String name)
@@ -217,5 +286,7 @@ public class Menu extends Lists {
         }
         System.out.println();
     }
+    
+    
 
 }
