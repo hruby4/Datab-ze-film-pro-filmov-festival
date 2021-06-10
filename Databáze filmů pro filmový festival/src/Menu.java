@@ -1,23 +1,34 @@
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.Hashtable;
+import java.util.Set;
 
-public class Menu extends Lists {
-	private ArrayList<Movie> movies;
+class Menu extends Lists {
+	public Hashtable<String, Movie> movies;
+	public ArrayList<Play> plays;
 	Scanner sc = new Scanner(System.in);
+	Serilizator ss;
     public Menu()
     {
         genres = new ArrayList<String>();
         actors = new ArrayList<String>();
         halls = new ArrayList<String>();
-        movies = new ArrayList<Movie>();
+        movies = new Hashtable<String, Movie>();
+        plays = new ArrayList<Play>();
+        
+        ss = new Serilizator(this);
     }
 
     public void MenuMainMethod()
     {
+    	ss.LoadData();
+    	
         while (true)
         {
-            System.out.println("Choose from options: ADDGENRE, ADDACTOR, ADDMOVIE, ADDHALL, GETMOVIES, MOVIESTODAY, FILMINHALL");
+            System.out.println("Choose from options: ADDGENRE, ADDACTOR, ADDMOVIE, ADDHALL, GETMOVIES, MOVIESTODAY, FILMINHALL, ADDPLAY, SAVEDATA");
             String option = sc.nextLine();
             System.out.println();
             
@@ -54,8 +65,14 @@ public class Menu extends Lists {
                 case "FILMINHALL":
                     GetHallMovies();
                     break;
+                case "ADDPLAY":
+                	AddPlay();
+                	break;
+                case "SAVEDATA":
+                	SaveData();
+                	break;
                 default:
-                    throw new Exception("No option with this name!");
+                	throw new Exception("No option with this name!");
             }
         }
 
@@ -67,76 +84,153 @@ public class Menu extends Lists {
         }
 
     }
+    
+    private void SaveData() 
+    {
+    	
+    	PrintWriter writer;
+		try {
+			writer = new PrintWriter(ss.file);
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	for(String genre : genres) 
+    	{
+    		ss.SaveData("G", genre, null, null);
+    	}
+    	for(String hall : halls) 
+    	{
+    		ss.SaveData("H", hall, null, null);
+    	}
+    	for(String actor : actors) 
+    	{
+    		ss.SaveData("A", actor, null, null);
+    	}
+        Set<String> names = movies.keySet();
+        for(String name : names){
+        	ss.SaveData("M", null, movies.get(name), null);
+        }
+    	for(Play play : plays) 
+    	{
+    		ss.SaveData("P", null, null, play);
+    	}
+    }
+    
     private void GetHallMovies()
     {
-        System.out.println("Choose hall in which you are interested or write DONE if you want to exit: ");
-        for (String hall : halls)
-        {
-            System.out.println(hall + ", ");
+        System.out.println("Choose your hall from list: ");
+        for(String hall : halls){
+            System.out.print(hall);
         }
-        System.out.println();
-
-        while(true)
-        {
-            try
-            {
-                String response = sc.nextLine().toUpperCase();
-                if (response.equals("DONE"))
-                {
-                    return;
-                }
-                else if (halls.contains(response))
-                {
-                    System.out.println("Movies that will be played in hall " + response + " are:");
-                    for(Movie movie : movies)
-                    {
-                        if (movie.halls.contains(response))
-                        {
-                            System.out.println(movie.name + ", ");
-                        }
-                    }
-                    System.out.println();
-                }
-                else
-                {
-                    throw new Exception("Hall doesnt exist!");
+        String response = sc.nextLine().toUpperCase();
+        for(Play play : plays){
+            if(play.hall.equals(response)){
+                System.out.println("Movie: " + play.movie.name + " will be played in hall: " + play.hall);
+                System.out.print("Actors: ");
+                for(String actor : play.movie.actors){
+                    System.out.print(actor + ", ");
                 }
             }
-            catch(Exception e)
-            {
-                System.out.println(e.getMessage());
-                System.out.println("Try existing one!");
-                System.out.println();
-            }
-
         }
+
+        
     }
 
     private void AddMovie()
     {
         Movie movie = new Movie();
         System.out.println("Enter movie name: ");
-        movie.name = sc.nextLine();
+        movie.name = sc.nextLine().toUpperCase();
 
-        movie.genres = ChooseToAdd(genres, "genre");
-        movie.actors = ChooseToAdd(actors, "actor");
-        movie.halls = ChooseToAdd(halls, "hall");
-        
         while(true) {
-        	System.out.println("Write date when the film will be played.");
-        	movie.dates.add(CreateDate());
-        	System.out.println("If you are done write DONE else write anything");
-        	String dt =  sc.nextLine().toUpperCase();
-        	if(dt.equals("DONE")) {
+            if(genres.size() == 0)
+             break;
+        	ChooseToAdd(movie.genres,"Genre",genres);
+        	System.out.println("If you want to add more write anything or write DONE if u are done.");
+        	String response = sc.nextLine().toUpperCase();
+        	if(response.equals("DONE")) {
         		break;
         	}
         	
         }
-        movies.add(movie);
+        while(true) {
+            if(actors.size() == 0)
+             break;
+        	ChooseToAdd(movie.actors,"Actor",actors);
+        	System.out.println("If you want to add more write anything or write DONE if u are done.");
+        	String response = sc.nextLine().toUpperCase();
+        	if(response.equals("DONE")) {
+        		break;
+        	}
+        }
+        movies.put(movie.name, movie);
         System.out.println("Movie added");
         System.out.println();
+       
         
     }
+    private void AddPlay() {
+        
+        if(movies.size() == 0 || halls.size() == 0){
+            System.out.println("Impossible");
+            return;
+        }
+        
+    	Play play = new Play();
+
+	System.out.println("Write the name of the film, that will be played.");
+	Set<String> names = movies.keySet();
+	System.out.println("Choose from this movies: ");
+	for(String name : names){
+	    System.out.print(name + ", ");
+	}
+	AddMovieToPlay(play);
+
+    	System.out.println("Write date when the film will be played.");
+        play.date = CreateDate();
+
+	System.out.println("Write hall in which it will be played");
+        ArrayList<String> list = new ArrayList<String>();
+        ChooseToAdd(list, "Hall", halls);
+        play.hall = list.get(0);
+
+	plays.add(play);
+	System.out.println("Play has been added");
+        	
+    }
+
+    private void AddMovieToPlay(Play play) {
+	
+	
+	
+	String response = sc.nextLine().toUpperCase();
+	
+
+	try{
+
+		if(movies.containsKey(response))
+		{
+			play.movie = movies.get(response);
+		}
+		else
+		{
+			throw new Exception("Nonexistant movie");
+		}
+
+	}
+	catch(Exception e) {
+
+		System.out.println(e.getMessage());
+        System.out.println("Try existing one!");
+        System.out.println();
+		AddMovieToPlay(play);
+	}
+
+    }	
+
     private LocalDate CreateDate() {
     	int year = 0;
     	int day = 0;
@@ -186,38 +280,32 @@ public class Menu extends Lists {
     	
     }
     private void GetTodaysMovies() {
-    	for(Movie movie : movies) {
-    		for(LocalDate date : movie.dates) {
-    		if(date.equals(LocalDate.now())) {
-    			System.out.println(movie.name + " in hall ");
-    		}
-    	}}
+        for(Play play : plays){
+            if(play.date.equals(LocalDate.now())){
+                System.out.println("Today will be film " + play.movie.name + " played in hall " + play.hall);
+            }
+        }
+        System.out.println();
     }
 
-    private ArrayList<String> ChooseToAdd(ArrayList<String> list, String name)
+    private void ChooseToAdd(ArrayList<String> list, String name, ArrayList<String> list2)
     {
         System.out.println();
-        ArrayList<String> temp = new ArrayList<String>(list);
-        ArrayList<String> _list = new ArrayList<String>();
-        while (true)
-        {
+        
+        		
             try
             {
                 System.out.println("Choose " + name + " from this list: ");
-                for (String item : temp)
+                for (String item : list2)
                 {
                     System.out.println(item + ", ");
                 }
-                System.out.println("If you are done with " + name + " selection, write DONE");
                 String response = sc.nextLine().toUpperCase();
-                if (response.equals("DONE"))
+                
+                 if (!list.contains(response) && list2.contains(response))
                 {
-                    return _list;
-                }
-                else if (temp.contains(response))
-                {
-                    temp.remove(response);
-                    _list.add(response);
+                	 
+                    list.add(response);
                 }
                 else
                 {
@@ -229,9 +317,10 @@ public class Menu extends Lists {
                 System.out.println(e.getMessage());
                 System.out.println("Try existing option");
                 System.out.println();
+                ChooseToAdd(list,name,list2);
             }
 
-        }
+        
     }
 
     private ArrayList<String> AddOption(String name, ArrayList<String> list)
@@ -273,16 +362,13 @@ public class Menu extends Lists {
 
     private void PrintAllMovies()
     {
-        for (Movie movie : movies)
-        {
-            System.out.println("Movie: " + movie.name);
-            System.out.println("Actors: ");
-
-            for (String actor : movie.actors)
-            {
-                System.out.println(actor + ", ");
-            }
-            System.out.println();
+        Set<String> names = movies.keySet();
+        for(String name : names){
+                System.out.println("Movie: " + name);
+                System.out.print("Actors: ");
+                for(String actor : movies.get(name).actors){
+                    System.out.print(actor + ", ");
+                } 
         }
         System.out.println();
     }
